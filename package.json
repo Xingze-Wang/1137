@@ -1,0 +1,27 @@
+{
+  "name": "chatbotsetup1",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "echo \"no build step\""
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.3",
+    "@anthropic-ai/claude-code": "^1.0.100",
+    "@supabase/supabase-js": "^2.53.0",
+    "ai": "^5.0.8",
+    "claude": "^0.1.1",
+    "code": "^5.2.4",
+    "dotenv": "^17.2.1",
+    "formidable": "^3.5.4",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.1"
+  }
+}

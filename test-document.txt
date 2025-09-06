@@ -1,0 +1,12 @@
+Test Document for PDF Upload
+
+This is a test document to verify that PDF upload functionality is working correctly.
+
+Key features to test:
+1. File upload through drag and drop
+2. File upload through file picker
+3. PDF text extraction
+4. Error handling for invalid files
+5. File size limits
+
+The PDF parser should be able to extract this text content and send it to the AI for processing.
