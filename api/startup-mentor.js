@@ -13,6 +13,12 @@ import {
   addMessage,
   updateConversationTitle,
 } from '../lib/database.js';
+import {
+  guardPromptLeak,
+  sanitizeUserMessage,
+  protectSystemPrompt
+} from '../lib/prompt-guard.js';
+import { getClientIP } from '../lib/api-utils.js';
 
 export const runtime = 'nodejs';
 export const config = { api: { bodyParser: false } };

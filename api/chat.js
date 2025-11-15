@@ -13,6 +13,12 @@ import {
   addMessage,
   updateConversationTitle,
 } from '../lib/database.js';
+import {
+  guardPromptLeak,
+  sanitizeUserMessage,
+  protectSystemPrompt
+} from '../lib/prompt-guard.js';
+import { getClientIP } from '../lib/api-utils.js';
 
 // Removed AI SDK imports - using direct fetch calls instead
 
@@ -381,6 +387,23 @@ export default async function handler(req, res) {
     f => f.originalFilename || f.newFilename || path.basename(f.filepath || f.path || '')
   );
 
+  // SECURITY: Check for prompt leak attempts
+  if (message && message.trim()) {
+    const clientIP = getClientIP(req);
+    const guard = guardPromptLeak(message, 'default', user.id, clientIP);
+
+    if (!guard.allowed) {
+      // High-confidence leak attempt detected - return deflection response
+      console.warn('[SECURITY] Blocked prompt leak attempt from user:', user.id);
+      return sendJSON(res, 200, {
+        role: 'default',
+        reply: guard.response,
+        conversationId: conversationId || null,
+        _security: 'prompt_leak_blocked'
+      });
+    }
+  }
+
   // 3) history + maybe create conversation
   let history = [];
   let currentConversationId = conversationId;
@@ -409,14 +432,17 @@ export default async function handler(req, res) {
     }
   }
 
-  // Use only the default 启明 prompt
-  const systemPrompt = SYSTEM_PROMPTS.default;
+  // Use only the default 启明 prompt with protection
+  const systemPrompt = protectSystemPrompt(SYSTEM_PROMPTS.default);
   const role = 'default';
 
-  console.log('Using default 启明 role');
+  console.log('Using default 启明 role with prompt protection');
+
+  // Sanitize user message before sending to AI
+  const sanitizedMessage = message ? sanitizeUserMessage(message) : '';
 
   // 6) stream or non-stream
-  const messages = buildFinalMessages({ systemPrompt, filesContext, history, userMessage: message });
+  const messages = buildFinalMessages({ systemPrompt, filesContext, history, userMessage: sanitizedMessage });
 
   if (stream) {
     // Streaming temporarily disabled - using non-stream fallback

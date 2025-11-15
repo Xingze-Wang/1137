@@ -1,6 +1,79 @@
-// script.js – FIXED VERSION WITH BETTER TOKEN EXPIRATION HANDLING
+// script.js – ENHANCED VERSION WITH PERFORMANCE & ROBUSTNESS IMPROVEMENTS
 (() => {
   'use strict';
+
+  /* ================================
+   *  Performance & Caching Layer
+   * ================================ */
+  const RequestCache = {
+    cache: new Map(),
+    set(key, value, ttl = 60000) { // 60s default TTL
+      this.cache.set(key, { value, expires: Date.now() + ttl });
+    },
+    get(key) {
+      const item = this.cache.get(key);
+      if (!item) return null;
+      if (Date.now() > item.expires) {
+        this.cache.delete(key);
+        return null;
+      }
+      return item.value;
+    },
+    clear(pattern) {
+      if (!pattern) {
+        this.cache.clear();
+        return;
+      }
+      for (const key of this.cache.keys()) {
+        if (key.includes(pattern)) this.cache.delete(key);
+      }
+    }
+  };
+
+  // Request deduplication - prevent duplicate identical requests
+  const activeRequests = new Map();
+
+  async function deduplicatedFetch(key, fetchFn) {
+    if (activeRequests.has(key)) {
+      console.log('⚡ Deduplicating request:', key);
+      return activeRequests.get(key);
+    }
+
+    const promise = fetchFn().finally(() => {
+      activeRequests.delete(key);
+    });
+
+    activeRequests.set(key, promise);
+    return promise;
+  }
+
+  // Debounce utility
+  function debounce(fn, delay) {
+    let timeoutId;
+    return function(...args) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  // Retry logic for failed requests
+  async function fetchWithRetry(url, options, maxRetries = 2) {
+    let lastError;
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        const response = await fetch(url, options);
+        return response;
+      } catch (error) {
+        lastError = error;
+        if (i < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, i), 5000);
+          console.log(`Retry ${i + 1}/${maxRetries} after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    throw lastError;
+  }
 
   /* ================================
    *  DOM lookups
@@ -463,19 +536,38 @@
   let conversations = [];
   let currentConversationId = '';
 
-  async function loadConversations() {
-    const headers = authManager.getAuthHeaders();
-    
-    try {
-      const res = await fetch(API_CONV, { method: 'GET', headers });
-      const data = await res.json();
-      
-      if (!res.ok) {
-        if (handleApiError(res, data)) return; // Token expired, handled
-        throw new Error(data.error || '获取会话失败');
+  async function loadConversations(forceRefresh = false) {
+    const cacheKey = 'conversations_list';
+
+    // Check cache first
+    if (!forceRefresh) {
+      const cached = RequestCache.get(cacheKey);
+      if (cached) {
+        console.log('⚡ Using cached conversations');
+        conversations = cached;
+        renderConversations();
+        return;
       }
-      
+    }
+
+    const headers = authManager.getAuthHeaders();
+
+    try {
+      // Use deduplication to prevent multiple simultaneous requests
+      const data = await deduplicatedFetch('loadConversations', async () => {
+        const res = await fetchWithRetry(API_CONV, { method: 'GET', headers });
+        const json = await res.json();
+
+        if (!res.ok) {
+          if (handleApiError(res, json)) throw new Error('Auth failed');
+          throw new Error(json.error || '获取会话失败');
+        }
+
+        return json;
+      });
+
       conversations = data.conversations || [];
+      RequestCache.set(cacheKey, conversations, 30000); // Cache for 30s
       renderConversations();
     } catch (error) {
       console.warn('Failed to load conversations:', error);
@@ -515,77 +607,98 @@
   }
   
   async function loadConversation(convId) {
+    const cacheKey = `conversation_${convId}`;
+
+    // Check cache first
+    const cached = RequestCache.get(cacheKey);
+    if (cached) {
+      console.log('⚡ Using cached conversation:', convId);
+      displayConversation(cached, convId);
+      return;
+    }
+
     const headers = { 'Content-Type': 'application/json', ...authManager.getAuthHeaders() };
     try {
-      const res = await fetch(API_CONV, {
+      const res = await fetchWithRetry(API_CONV, {
         method: 'POST',
         headers,
         body: JSON.stringify({ conversationId: convId })
       });
       const data = await res.json();
-      
+
       if (!res.ok) {
         if (handleApiError(res, data)) return;
         alert(data.error || '加载会话失败');
         return;
       }
-      
-      currentConversationId = convId;
-      if (conversationIdInput) conversationIdInput.value = currentConversationId;
-      chatLog.innerHTML = '';
-      
-      // Update title based on the latest assistant message's ai_mode
-      const assistantMessages = (data.messages || []).filter(m => m.role === 'assistant');
-      if (assistantMessages.length > 0) {
-        const latestAssistantMessage = assistantMessages[assistantMessages.length - 1];
-        updateUIBasedOnRole(latestAssistantMessage.ai_mode || 'default');
-      }
-      
-      (data.messages || []).forEach(m => {
-        if (m.role === 'user') {
-          addMessage('You', m.content);
-        } else {
-          // Determine assistant name based on ai_mode
-          let assistantName = 'Dean'; // default
-          if (m.ai_mode === 'Investor') {
-            assistantName = 'Investor';
-          } else if (m.ai_mode === 'Expert_match') {
-            assistantName = 'Expert Match';
-          } else if (m.ai_mode === 'Analyst') {
-            assistantName = 'Analyst';
-          } else if (m.ai_mode === 'Agent_builder') {
-            assistantName = 'Agent Builder';
-          }
-          addMessage(assistantName, m.content);
-        }
-      });
-      renderConversations();
-      scrollToBottom();
+
+      // Cache the conversation
+      RequestCache.set(cacheKey, data, 60000); // Cache for 60s
+
+      displayConversation(data, convId);
     } catch (error) {
       if (handleApiError(null, error)) return;
       alert('加载会话失败');
     }
+  }
+
+  function displayConversation(data, convId) {
+    currentConversationId = convId;
+    if (conversationIdInput) conversationIdInput.value = currentConversationId;
+    chatLog.innerHTML = '';
+
+    // Update title based on the latest assistant message's ai_mode
+    const assistantMessages = (data.messages || []).filter(m => m.role === 'assistant');
+    if (assistantMessages.length > 0) {
+      const latestAssistantMessage = assistantMessages[assistantMessages.length - 1];
+      updateUIBasedOnRole(latestAssistantMessage.ai_mode || 'default');
+    }
+
+    (data.messages || []).forEach(m => {
+      if (m.role === 'user') {
+        addMessage('You', m.content);
+      } else {
+        // Determine assistant name based on ai_mode
+        let assistantName = 'Dean'; // default
+        if (m.ai_mode === 'Investor') {
+          assistantName = 'Investor';
+        } else if (m.ai_mode === 'Expert_match') {
+          assistantName = 'Expert Match';
+        } else if (m.ai_mode === 'Analyst') {
+          assistantName = 'Analyst';
+        } else if (m.ai_mode === 'Agent_builder') {
+          assistantName = 'Agent Builder';
+        }
+        addMessage(assistantName, m.content);
+      }
+    });
+    renderConversations();
+    scrollToBottom();
   }
   
   async function deleteConversation(convId) {
     if (!confirm('确定要删除这个会话吗？')) return;
     const headers = { 'Content-Type': 'application/json', ...authManager.getAuthHeaders() };
     try {
-      const res = await fetch(API_CONV, {
+      const res = await fetchWithRetry(API_CONV, {
         method: 'DELETE',
         headers,
         body: JSON.stringify({ conversationId: convId })
       });
       const data = await res.json();
-      
+
       if (!res.ok) {
         if (handleApiError(res, data)) return;
         alert(data.error || '删除失败');
         return;
       }
-      
+
+      // Clear cache on mutation
+      RequestCache.clear('conversations');
+      RequestCache.clear(`conversation_${convId}`);
+
       if (convId === currentConversationId) startNewConversation();
-      await loadConversations();
+      await loadConversations(true); // Force refresh
     } catch (error) {
       if (handleApiError(null, error)) return;
       alert('删除失败');
@@ -836,10 +949,21 @@
   /* ================================
    *  Chat form (send + stream) - IMPROVED ERROR HANDLING
    * ================================ */
+  let isSubmitting = false; // Prevent duplicate submissions
+
   if (chatForm) chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      console.log('⚡ Preventing duplicate submission');
+      return;
+    }
+
     const text = (userInput?.value || '').trim();
     if (!text && !selectedFiles.length) return;
+
+    isSubmitting = true;
     
     console.log('🚀 CHAT SUBMISSION:');
     console.log('💬 Message:', text || '[no text]');
@@ -913,9 +1037,9 @@
       // Choose API endpoint based on current mode
       const apiEndpoint = (currentMode === 'startup' || currentMode === 'agent') ? API_STARTUP_MENTOR : API_CHAT;
       console.log('Using API endpoint:', apiEndpoint, 'for mode:', currentMode);
-      
-      // Non-stream request (streaming disabled)
-      const resp = await fetch(apiEndpoint, { method: 'POST', headers, body: formData });
+
+      // Non-stream request with retry logic
+      const resp = await fetchWithRetry(apiEndpoint, { method: 'POST', headers, body: formData }, 1);
       const json = await resp.json();
       console.log('📨 Non-stream response:', { ok: resp.ok, status: resp.status, reply: (json.reply || '').slice(0, 50) + '...' });
       
@@ -1019,6 +1143,7 @@
       assistantEl.remove();
       addMessage('Dean', '抱歉，连接出现问题。请检查网络连接后重试。');
     } finally {
+      isSubmitting = false; // Reset submission flag
       disableInputs(false);
       // FIXED: Hide stop button and show send button again
       if (stopButton) {
@@ -1029,6 +1154,12 @@
         sendButton.style.display = 'inline-flex';
       }
       if (userInput) userInput.focus();
+
+      // Clear conversation cache on new message
+      RequestCache.clear('conversations');
+      if (currentConversationId) {
+        RequestCache.clear(`conversation_${currentConversationId}`);
+      }
     }
   });
 

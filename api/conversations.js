@@ -1,5 +1,5 @@
 // api/conversations.js
-// CLEAN + SAFE JSON BODY PARSING (no JSON.parse crashes)
+// ENHANCED with validation and error handling
 
 import { verifyUser } from '../lib/verify-user.js';
 import {
@@ -7,82 +7,153 @@ import {
   getConversationMessages,
   deleteConversation,
 } from '../lib/database.js';
+import {
+  setCorsHeaders,
+  sendJSON,
+  sendError,
+  asyncHandler,
+  withTimeout,
+  logRequest,
+  parseJSONBody,
+  handleOptions,
+  validateMethod,
+  getClientIP,
+  createSuccessResponse
+} from '../lib/api-utils.js';
+import {
+  validateConversationId,
+  checkRateLimit
+} from '../lib/validation.js';
 
-function setCors(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Cookie');
-}
+export default asyncHandler(async function handler(req, res) {
+  // Set timeout
+  withTimeout(req, res, 15000);
 
-function send(res, code, obj) {
-  res.status(code).setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.end(JSON.stringify(obj));
-}
+  // Set CORS headers
+  setCorsHeaders(req, res);
 
-function safeJsonParse(body) {
-  if (!body) return {};
-  if (typeof body === 'object') return body; // Already parsed by runtime
+  // Handle OPTIONS preflight
+  if (handleOptions(req, res)) return;
+
+  // Log request
+  logRequest(req, { endpoint: 'conversations' });
+
+  // Rate limiting
+  const clientIP = getClientIP(req);
   try {
-    return JSON.parse(body);
+    checkRateLimit(`conversations:${clientIP}`, 100, 60000); // 100 req/min
+  } catch (error) {
+    return sendError(res, error);
+  }
+
+  // Auth (shared)
+  let user;
+  try {
+    user = await verifyUser(req);
   } catch (e) {
-    console.warn('[conversations] JSON parse failed:', e?.message);
-    return {}; // never throw
+    console.error('[conversations] Auth failed:', e?.message || e);
+    return sendError(res, {
+      statusCode: 401,
+      message: 'Invalid or expired authentication token'
+    });
   }
-}
 
-export default async function handler(req, res) {
-  try {
-    setCors(req, res);
-    if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method === 'GET') {
+    const r = await getUserConversations(user.id);
+    if (!r?.success) {
+      return sendError(res, {
+        statusCode: 500,
+        message: r?.error || 'Failed to fetch conversations'
+      });
+    }
+    return sendJSON(res, 200, createSuccessResponse({
+      conversations: r.conversations || []
+    }));
+  }
 
-    // Auth (shared)
-    let user;
+  if (req.method === 'POST') {
+    const body = parseJSONBody(req.body);
+    const { conversationId } = body;
+
+    if (!conversationId) {
+      return sendError(res, {
+        statusCode: 400,
+        message: 'Missing required field: conversationId',
+        field: 'conversationId'
+      });
+    }
+
+    // Validate conversation ID format
     try {
-      user = await verifyUser(req);
-    } catch (e) {
-      console.error('[conversations] Auth failed:', e?.message || e);
-      return send(res, 401, { error: 'Invalid or expired token' });
+      validateConversationId(conversationId);
+    } catch (error) {
+      return sendError(res, {
+        statusCode: 400,
+        message: error.message,
+        field: 'conversationId'
+      });
     }
 
-    if (req.method === 'GET') {
-      const r = await getUserConversations(user.id);
-      if (!r?.success) return send(res, 500, { error: r?.error || '获取会话失败' });
-      return send(res, 200, { conversations: r.conversations || [] });
+    const r = await getConversationMessages(conversationId, user.id);
+    if (!r?.success) {
+      return sendError(res, {
+        statusCode: r?.error?.includes('not found') ? 404 : 500,
+        message: r?.error || 'Failed to fetch messages'
+      });
     }
 
-    if (req.method === 'POST') {
-      const body = safeJsonParse(req.body);
-      const { conversationId } = body;
-      if (!conversationId) return send(res, 400, { error: '缺少 conversationId' });
+    // normalize shape for frontend
+    const messages = (r.messages || []).map(m => ({
+      role: m.role,
+      content: m.content || '',
+      created_at: m.created_at,
+      ai_mode: m.ai_mode
+    }));
 
-      const r = await getConversationMessages(conversationId, user.id);
-      if (!r?.success) return send(res, 500, { error: r?.error || '获取会话失败' });
-
-      // normalize shape for frontend
-      const messages = (r.messages || []).map(m => ({
-        role: m.role,
-        content: m.content || '',
-        created_at: m.created_at,
-      }));
-      return send(res, 200, { messages });
-    }
-
-    if (req.method === 'DELETE') {
-      const body = safeJsonParse(req.body);
-      const { conversationId } = body;
-      if (!conversationId) return send(res, 400, { error: '缺少 conversationId' });
-
-      const r = await deleteConversation(conversationId, user.id);
-      if (!r?.success) return send(res, 500, { error: r?.error || '删除会话失败' });
-      return send(res, 200, { message: '会话已删除' });
-    }
-
-    res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-    return send(res, 405, { error: 'Method Not Allowed' });
-  } catch (err) {
-    console.error('Conversations API Error:', err);
-    return send(res, 500, { error: err?.message || '服务器内部错误' });
+    return sendJSON(res, 200, createSuccessResponse({ messages }));
   }
-}
+
+  if (req.method === 'DELETE') {
+    const body = parseJSONBody(req.body);
+    const { conversationId } = body;
+
+    if (!conversationId) {
+      return sendError(res, {
+        statusCode: 400,
+        message: 'Missing required field: conversationId',
+        field: 'conversationId'
+      });
+    }
+
+    // Validate conversation ID format
+    try {
+      validateConversationId(conversationId);
+    } catch (error) {
+      return sendError(res, {
+        statusCode: 400,
+        message: error.message,
+        field: 'conversationId'
+      });
+    }
+
+    const r = await deleteConversation(conversationId, user.id);
+    if (!r?.success) {
+      return sendError(res, {
+        statusCode: r?.error?.includes('not found') ? 404 : 500,
+        message: r?.error || 'Failed to delete conversation'
+      });
+    }
+
+    return sendJSON(res, 200, createSuccessResponse(
+      { deleted: true },
+      'Conversation deleted successfully'
+    ));
+  }
+
+  // Invalid method
+  res.setHeader('Allow', 'GET, POST, DELETE');
+  return sendError(res, {
+    statusCode: 405,
+    message: 'Method not allowed'
+  });
+});
