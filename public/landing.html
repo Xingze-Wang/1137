@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beta - AI驱动的学习与创业平台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="landing.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="/" class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+          <path d="M11 24V8h6.5c2.5 0 4.5 2 4.5 4.5S20 17 17.5 17H14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="18" cy="21" r="2" fill="white"/>
+          <defs>
+            <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#0A381F"/>
+              <stop offset="1" stop-color="#0E5A30"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>Beta</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">功能</a>
+        <a href="#how-it-works">工作原理</a>
+        <a href="#pricing">定价</a>
+        <a href="#about">关于</a>
+      </div>
+      <div class="nav-actions">
+        <button class="btn-secondary" onclick="window.location.href='index.html#login'">登录</button>
+        <button class="btn-primary" onclick="window.location.href='index.html#signup'">开始使用</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-background">
+      <div class="gradient-orb orb-1"></div>
+      <div class="gradient-orb orb-2"></div>
+      <div class="gradient-orb orb-3"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-icon">✨</span>
+        <span>全新AI体验</span>
+      </div>
+      <h1 class="hero-title">
+        <span class="title-line">用AI加速你的</span>
+        <span class="title-gradient">学习与创业之旅</span>
+      </h1>
+      <p class="hero-description">
+        Beta结合了最先进的AI技术，为你提供个性化的学习路径、创业指导和智能Agent创建工具。让AI成为你最强大的合作伙伴。
+      </p>
+      <div class="hero-actions">
+        <button class="btn-hero-primary" onclick="window.location.href='index.html'">
+          <span>立即开始</span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="btn-hero-secondary">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
+            <path d="M8 7L13 10L8 13V7Z" fill="currentColor"/>
+          </svg>
+          <span>观看演示</span>
+        </button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-number">10K+</span>
+          <span class="stat-label">活跃用户</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">1M+</span>
+          <span class="stat-label">对话生成</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number">98%</span>
+          <span class="stat-label">满意度</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="chat-preview">
+        <div class="chat-window">
+          <div class="chat-header-preview">
+            <div class="chat-avatar"></div>
+            <span>Beta AI Assistant</span>
+            <div class="chat-status">在线</div>
+          </div>
+          <div class="chat-messages">
+            <div class="message-user animate-message">
+              <p>帮我分析这个商业模式的可行性</p>
+            </div>
+            <div class="message-ai animate-message" style="animation-delay: 0.5s">
+              <p>我来帮您从多个维度分析这个商业模式...</p>
+              <div class="typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">强大功能，助力成长</h2>
+        <p class="section-description">三种模式，满足你的不同需求</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="12" fill="url(#feat1)"/>
+              <path d="M24 16V32M16 24H32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="feat1" x1="0" y1="0" x2="48" y2="48">
+                  <stop stop-color="#4F46E5"/>
+                  <stop offset="1" stop-color="#7C3AED"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h3>学习模式</h3>
+          <p>框架化思维，深度解析复杂概念，让学习更高效</p>
+          <ul class="feature-list">
+            <li>结构化知识体系</li>
+            <li>互动式学习体验</li>
+            <li>个性化学习路径</li>
+          </ul>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="12" fill="url(#feat2)"/>
+              <path d="M24 14L30 20L24 26L18 20L24 14Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M24 26V34" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="feat2" x1="0" y1="0" x2="48" y2="48">
+                  <stop stop-color="#EC4899"/>
+                  <stop offset="1" stop-color="#F97316"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h3>创业导师</h3>
+          <p>专业的创业指导，从想法到执行的全程陪伴</p>
+          <ul class="feature-list">
+            <li>商业模式分析</li>
+            <li>市场策略建议</li>
+            <li>融资方案规划</li>
+          </ul>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="12" fill="url(#feat3)"/>
+              <circle cx="24" cy="24" r="8" stroke="white" stroke-width="2"/>
+              <circle cx="24" cy="24" r="3" fill="white"/>
+              <defs>
+                <linearGradient id="feat3" x1="0" y1="0" x2="48" y2="48">
+                  <stop stop-color="#06B6D4"/>
+                  <stop offset="1" stop-color="#10B981"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h3>创建Agent</h3>
+          <p>定制专属AI助手，自动化你的工作流程</p>
+          <ul class="feature-list">
+            <li>自定义工作流</li>
+            <li>智能任务处理</li>
+            <li>持续优化学习</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">简单三步，开启智能之旅</h2>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">01</div>
+          <h3>选择模式</h3>
+          <p>根据你的需求选择学习、创业或Agent模式</p>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+          <div class="step-number">02</div>
+          <h3>输入问题</h3>
+          <p>描述你的问题或需求，越详细越好</p>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+          <div class="step-number">03</div>
+          <h3>获得方案</h3>
+          <p>获得专业、深度的解决方案和行动建议</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="cta-content">
+      <h2>准备好开始了吗？</h2>
+      <p>加入数千名正在使用Beta提升自己的用户</p>
+      <button class="btn-cta" onclick="window.location.href='index.html'">
+        免费开始使用
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="cta-bg">
+      <div class="cta-orb"></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <div class="logo">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="var(--brand-accent)"/>
+            <path d="M11 24V8h6.5c2.5 0 4.5 2 4.5 4.5S20 17 17.5 17H14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="18" cy="21" r="2" fill="white"/>
+          </svg>
+          <span>Beta</span>
+        </div>
+        <p>AI驱动的学习与创业平台</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-column">
+          <h4>产品</h4>
+          <a href="#features">功能</a>
+          <a href="#pricing">定价</a>
+          <a href="#roadmap">路线图</a>
+        </div>
+        <div class="footer-column">
+          <h4>资源</h4>
+          <a href="#docs">文档</a>
+          <a href="#api">API</a>
+          <a href="#blog">博客</a>
+        </div>
+        <div class="footer-column">
+          <h4>公司</h4>
+          <a href="#about">关于我们</a>
+          <a href="#careers">招聘</a>
+          <a href="#contact">联系</a>
+        </div>
+        <div class="footer-column">
+          <h4>法律</h4>
+          <a href="#privacy">隐私政策</a>
+          <a href="#terms">服务条款</a>
+          <a href="#security">安全</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2024 Beta. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="landing.js"></script>
+</body>
+</html>

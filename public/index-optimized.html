@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beta - AI Chat Interface</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="description" content="AI-powered learning and entrepreneurship platform">
+  <meta name="theme-color" content="#0A381F">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Beta">
+
+  <!-- Preload Critical Resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="/styles-enhanced.css" as="style">
+  <link rel="preload" href="/script-optimized.js" as="script">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles-enhanced.css">
+
+  <!-- Critical CSS for initial render -->
+  <style>
+    body{margin:0;padding:0;font-family:'Inter',sans-serif;background:#F9FAFB}
+    .loading-screen{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667EEA,#764BA2);z-index:9999}
+    .loading-content{text-align:center;color:white}
+    .loading-logo{width:80px;height:80px;margin:0 auto 2rem;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+    .loading-text{font-size:1.25rem;font-weight:600;margin-bottom:1rem}
+    .loading-progress{width:200px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px;overflow:hidden;margin:0 auto}
+    .loading-bar{height:100%;background:white;border-radius:2px;animation:progress 2s ease-in-out infinite}
+    @keyframes progress{0%{width:0}50%{width:70%}100%{width:100%}}
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loading-screen">
+    <div class="loading-content">
+      <svg class="loading-logo" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" rx="20" fill="white" fill-opacity="0.2"/>
+        <path d="M28 60V20h16c6 0 11 5 11 11s-5 11-11 11H34" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="45" cy="52" r="5" fill="white"/>
+      </svg>
+      <div class="loading-text">Beta 正在启动</div>
+      <div class="loading-progress">
+        <div class="loading-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Authentication Container -->
+  <div class="auth-container" id="auth-container" style="display: none;">
+    <div class="auth-form">
+      <h2>登录到 Beta</h2>
+      <div id="auth-message" class="auth-message" style="display: none;"></div>
+
+      <!-- Login Form -->
+      <form id="login-form">
+        <div class="form-group" style="--index: 0">
+          <label for="email">邮箱</label>
+          <input type="email" id="email" required autocomplete="email">
+        </div>
+        <div class="form-group" style="--index: 1">
+          <label for="password">密码</label>
+          <input type="password" id="password" required autocomplete="current-password">
+        </div>
+        <div class="form-buttons">
+          <button type="submit" class="auth-btn primary">登录</button>
+          <button type="button" id="switch-to-signup" class="auth-btn secondary">注册</button>
+        </div>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="signup-form" style="display: none;">
+        <div class="form-group" style="--index: 0">
+          <label for="signup-email">邮箱</label>
+          <input type="email" id="signup-email" required autocomplete="email">
+        </div>
+        <div class="form-group" style="--index: 1">
+          <label for="signup-password">密码</label>
+          <input type="password" id="signup-password" required autocomplete="new-password">
+        </div>
+        <div class="form-group" style="--index: 2">
+          <label for="confirm-password">确认密码</label>
+          <input type="password" id="confirm-password" required autocomplete="new-password">
+        </div>
+        <div class="form-buttons">
+          <button type="submit" class="auth-btn primary">注册</button>
+          <button type="button" id="switch-to-login" class="auth-btn secondary">返回登录</button>
+        </div>
+      </form>
+
+      <div class="auth-footer">
+        <a href="/landing.html" class="auth-link">了解更多关于 Beta →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Interface Container -->
+  <div class="chat-container" id="chat-container" style="display: none;">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="/landing.html" class="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M4 19.5C4 18.837 4.263 18.201 4.732 17.732C5.201 17.263 5.837 17 6.5 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6.5 2H20V22H6.5C5.837 22 5.201 21.737 4.732 21.268C4.263 20.799 4 20.163 4 19.5V4.5C4 3.837 4.263 3.201 4.732 2.732C5.201 2.263 5.837 2 6.5 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="sidebar-text">Beta</span>
+        </a>
+        <button id="toggle-sidebar" class="toggle-sidebar" title="切换侧边栏">
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+          </svg>
+        </button>
+      </div>
+
+      <button id="new-chat-btn" class="new-chat-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span class="sidebar-text">新对话</span>
+      </button>
+
+      <div class="sidebar-search">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="search" id="search-chats" placeholder="搜索对话..." autocomplete="off">
+      </div>
+
+      <div class="conversations-wrapper">
+        <div class="recents-header">最近对话</div>
+        <div class="conversations-list" id="conversations-list">
+          <!-- Virtual list will be rendered here -->
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar" id="user-avatar"></div>
+        <div class="user-details">
+          <div class="user-email" id="user-email"></div>
+          <span class="user-status">在线</span>
+        </div>
+        <button id="logout-btn" class="logout-btn" title="退出">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="main-chat">
+      <header class="chat-header">
+        <!-- Mode selector dropdown -->
+        <div class="mode-dropdown" id="mode-dropdown">
+          <button class="mode-dropdown-btn" id="mode-dropdown-btn">
+            <span id="current-mode-text">学习模式</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+          </button>
+          <div class="mode-dropdown-menu" id="mode-dropdown-menu">
+            <button class="mode-option active" data-mode="learning">学习模式</button>
+            <button class="mode-option" data-mode="startup">创业导师</button>
+            <button class="mode-option" data-mode="agent">创建Agent</button>
+          </div>
+        </div>
+
+        <h1>Beta</h1>
+
+        <button id="share-conversation" class="share-button" title="分享对话">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+        </button>
+      </header>
+
+      <!-- Welcome Screen -->
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-content">
+          <div class="welcome-header">
+            <h1>Beta</h1>
+            <p class="welcome-subtitle">你的AI学习与创业伙伴</p>
+          </div>
+
+          <div class="example-prompts">
+            <div class="prompts-section">
+              <h3>📚 学习模式</h3>
+              <div class="prompt-grid">
+                <button class="prompt-card" data-mode="learning" data-prompt="帮我理解量子计算的基本原理" style="--index: 0">
+                  <span class="prompt-icon">💡</span>
+                  <span class="prompt-text">量子计算入门</span>
+                </button>
+                <button class="prompt-card" data-mode="learning" data-prompt="解释区块链技术框架" style="--index: 1">
+                  <span class="prompt-icon">🔗</span>
+                  <span class="prompt-text">区块链技术</span>
+                </button>
+                <button class="prompt-card" data-mode="learning" data-prompt="神经网络原理讲解" style="--index: 2">
+                  <span class="prompt-icon">🧠</span>
+                  <span class="prompt-text">神经网络</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="prompts-section">
+              <h3>🚀 创业导师</h3>
+              <div class="prompt-grid">
+                <button class="prompt-card" data-mode="startup" data-prompt="SaaS产品定价策略" style="--index: 3">
+                  <span class="prompt-icon">💰</span>
+                  <span class="prompt-text">定价策略</span>
+                </button>
+                <button class="prompt-card" data-mode="startup" data-prompt="如何准备种子轮融资" style="--index: 4">
+                  <span class="prompt-icon">📊</span>
+                  <span class="prompt-text">融资准备</span>
+                </button>
+                <button class="prompt-card" data-mode="startup" data-prompt="创业团队组建策略" style="--index: 5">
+                  <span class="prompt-icon">👥</span>
+                  <span class="prompt-text">团队组建</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="prompts-section">
+              <h3>🎯 创建Agent</h3>
+              <div class="prompt-grid">
+                <button class="prompt-card" data-mode="agent" data-prompt="创建用户反馈分析助手" style="--index: 6">
+                  <span class="prompt-icon">📝</span>
+                  <span class="prompt-text">反馈分析</span>
+                </button>
+                <button class="prompt-card" data-mode="agent" data-prompt="设计技术面试官AI" style="--index: 7">
+                  <span class="prompt-icon">💻</span>
+                  <span class="prompt-text">面试官AI</span>
+                </button>
+                <button class="prompt-card" data-mode="agent" data-prompt="技术博客写作助手" style="--index: 8">
+                  <span class="prompt-icon">✍️</span>
+                  <span class="prompt-text">写作助手</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="welcome-footer">
+            <p class="tip">💡 <strong>提示:</strong> 选择一个示例开始，或在下方输入你的问题</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-log" id="chat-log" style="display: none;">
+        <!-- Virtual list will be rendered here -->
+      </div>
+
+      <!-- File input for uploads -->
+      <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx" style="display: none;" multiple>
+
+      <!-- File Preview Area -->
+      <div class="file-preview-area" id="file-preview-area" style="display: none;">
+        <div class="file-preview-header">
+          <span>已选择文件:</span>
+          <button type="button" id="clear-files" class="clear-files-btn">清除</button>
+        </div>
+        <div class="file-list" id="file-list"></div>
+      </div>
+
+      <!-- Chat Input Form -->
+      <div class="chat-input-area">
+        <form class="chat-form" id="chat-form">
+          <input type="hidden" id="conversation-id" name="conversationId" value="">
+          <input type="hidden" id="chat-mode" name="chatMode" value="learning">
+
+          <div class="input-container">
+            <button type="button" class="file-attach-btn" id="file-upload-btn" title="上传文件">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </button>
+
+            <textarea id="user-input" placeholder="输入问题..." rows="1" autocomplete="off"></textarea>
+
+            <div class="button-container">
+              <button type="submit" id="send-button" title="发送">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                </svg>
+              </button>
+              <button type="button" id="stop-button" title="停止生成" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M6 6h12v12H6z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="script-optimized.js" defer></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful:', registration.scope);
+
+            // Check for updates periodically
+            setInterval(() => {
+              registration.update();
+            }, 60000); // Check every minute
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed:', err);
+          });
+      });
+    }
+
+    // Hide loading screen when app is ready
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.style.opacity = '0';
+          loadingScreen.style.pointerEvents = 'none';
+          setTimeout(() => {
+            loadingScreen.style.display = 'none';
+          }, 500);
+        }
+      }, 1000);
+    });
+
+    // Install prompt for PWA
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // Show install button if needed
+      const installButton = document.getElementById('install-pwa');
+      if (installButton) {
+        installButton.style.display = 'block';
+        installButton.addEventListener('click', async () => {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User response to install prompt: ${outcome}`);
+          deferredPrompt = null;
+        });
+      }
+    });
+  </script>
+</body>
+</html>

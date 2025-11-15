@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beta - Offline</title>
+  <style>
+    :root {
+      --color-primary: #0A381F;
+      --color-text: #111827;
+      --color-text-secondary: #6B7280;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .offline-container {
+      background: white;
+      border-radius: 1rem;
+      padding: 3rem;
+      text-align: center;
+      max-width: 500px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .offline-icon {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 2rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    h1 {
+      color: var(--color-primary);
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+
+    p {
+      color: var(--color-text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .retry-button {
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, #0A381F, #0E5A30);
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .retry-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(10, 56, 31, 0.3);
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 2rem;
+      padding: 0.5rem 1rem;
+      background: #FEF2F2;
+      color: #991B1B;
+      border-radius: 2rem;
+      font-size: 0.875rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #EF4444;
+      border-radius: 50%;
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.3;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-container">
+    <svg class="offline-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="45" stroke="#E5E7EB" stroke-width="2"/>
+      <path d="M30 50L45 35M45 35L60 50M45 35V65" stroke="#0A381F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M70 50L55 65M55 65L40 50M55 65V35" stroke="#0A381F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
+    </svg>
+
+    <h1>您目前处于离线状态</h1>
+    <p>
+      Beta需要网络连接才能提供AI服务。请检查您的网络连接，然后重试。
+      离线时，您仍可以查看已缓存的对话内容。
+    </p>
+
+    <button class="retry-button" onclick="window.location.reload()">
+      重新连接
+    </button>
+
+    <div class="status-indicator">
+      <span class="status-dot"></span>
+      <span>离线模式</span>
+    </div>
+  </div>
+
+  <script>
+    // Check for connection periodically
+    setInterval(() => {
+      fetch('/', { method: 'HEAD' })
+        .then(() => {
+          // Connection restored, reload page
+          window.location.reload();
+        })
+        .catch(() => {
+          // Still offline
+          console.log('Still offline');
+        });
+    }, 5000);
+
+    // Listen for online event
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+  </script>
+</body>
+</html>
