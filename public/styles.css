@@ -1349,3 +1349,325 @@ body {
     transform: scale(1.1);
 }
 
+
+/*
+==========================================================================
+    SEARCH FUNCTIONALITY STYLES
+==========================================================================
+*/
+
+/* Search results highlighting */
+mark {
+    background-color: rgba(255, 215, 0, 0.3);
+    color: inherit;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+/* Search result conversation item enhancements */
+.conversation-item.search-result {
+    border-left: 3px solid var(--brand-accent);
+    padding-left: 0.75rem;
+}
+
+.conversation-item .match-count {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+.conversation-item .match-preview {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-top: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.clear-search {
+    padding: 0.75rem;
+    background: #f0f0f0;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    transition: background 0.2s ease;
+}
+
+.clear-search:hover {
+    background: #e0e0e0;
+}
+
+.no-results {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+/* Search input focus state enhancement */
+.sidebar-search input:focus {
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 3px rgba(10, 56, 31, 0.1);
+}
+
+/*
+==========================================================================
+    MESSAGE REACTIONS STYLES
+==========================================================================
+*/
+
+/* Reaction buttons container */
+.message-reactions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    align-items: center;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.chat-message:hover .message-reactions {
+    opacity: 1;
+}
+
+/* Individual reaction button */
+.reaction-btn {
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.reaction-btn:hover {
+    background: rgba(10, 56, 31, 0.05);
+    border-color: var(--brand-accent);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.reaction-btn.active {
+    background: rgba(10, 56, 31, 0.1);
+    border-color: var(--brand-accent);
+    opacity: 1;
+}
+
+.reaction-btn.thumbs-up.active {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: #22c55e;
+}
+
+.reaction-btn.thumbs-down.active {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+}
+
+.reaction-btn.bookmark.active {
+    background: rgba(234, 179, 8, 0.1);
+    border-color: #eab308;
+}
+
+/* Bookmarks section in sidebar */
+.bookmarks-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.bookmarks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.bookmarks-header h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.bookmarks-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.25rem;
+    color: var(--text-light);
+}
+
+.bookmark-item {
+    padding: 0.75rem;
+    margin: 0.25rem 0.5rem;
+    background: rgba(234, 179, 8, 0.05);
+    border-left: 3px solid #eab308;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.bookmark-item:hover {
+    background: rgba(234, 179, 8, 0.1);
+}
+
+.bookmark-preview {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bookmark-meta {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    margin-top: 0.25rem;
+}
+
+/*
+==========================================================================
+    WELCOME/LANDING SCREEN STYLES
+==========================================================================
+*/
+
+.welcome-screen {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-content {
+    max-width: 900px;
+    width: 100%;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.welcome-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.welcome-header h1 {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    color: var(--brand-accent);
+    margin-bottom: 0.5rem;
+}
+
+.welcome-subtitle {
+    font-size: 1.125rem;
+    color: var(--text-light);
+    font-weight: 400;
+}
+
+.example-prompts {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.prompts-section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    padding-left: 0.25rem;
+}
+
+.prompt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.prompt-card {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-family: var(--font-sans);
+}
+
+.prompt-card:hover {
+    border-color: var(--brand-accent);
+    background: rgba(10, 56, 31, 0.02);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.prompt-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.prompt-text {
+    font-size: 0.9375rem;
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+.welcome-footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.welcome-footer .tip {
+    font-size: 0.875rem;
+    color: var(--text-light);
+}
+
+.welcome-footer .tip strong {
+    color: var(--brand-accent);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .welcome-header h1 {
+        font-size: 2rem;
+    }
+
+    .welcome-subtitle {
+        font-size: 1rem;
+    }
+
+    .prompt-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .welcome-screen {
+        padding: 1rem;
+    }
+}

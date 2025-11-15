@@ -158,8 +158,78 @@
           </svg>
         </button>
       </header>
-      
-      <div class="chat-log" id="chat-log">
+
+      <!-- Welcome Screen (shown when no conversation is active) -->
+      <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-content">
+          <div class="welcome-header">
+            <h1>Beta</h1>
+            <p class="welcome-subtitle">你的AI学习与创业伙伴</p>
+          </div>
+
+          <div class="example-prompts">
+            <div class="prompts-section">
+              <h3>📚 学习模式</h3>
+              <div class="prompt-grid">
+                <button class="prompt-card" data-mode="learning" data-prompt="帮我理解量子计算的基本原理，用框架思维来解释">
+                  <span class="prompt-icon">💡</span>
+                  <span class="prompt-text">量子计算入门</span>
+                </button>
+                <button class="prompt-card" data-mode="learning" data-prompt="我想学习区块链技术，请先给我一个整体框架">
+                  <span class="prompt-icon">🔗</span>
+                  <span class="prompt-text">区块链技术框架</span>
+                </button>
+                <button class="prompt-card" data-mode="learning" data-prompt="解释一下机器学习中的神经网络">
+                  <span class="prompt-icon">🧠</span>
+                  <span class="prompt-text">神经网络原理</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="prompts-section">
+              <h3>🚀 创业导师</h3>
+              <div class="prompt-grid">
+                <button class="prompt-card" data-mode="startup" data-prompt="我在做SaaS产品，如何定价才能既有竞争力又保证利润？">
+                  <span class="prompt-icon">💰</span>
+                  <span class="prompt-text">SaaS定价策略</span>
+                </button>
+                <button class="prompt-card" data-mode="startup" data-prompt="种子轮融资时，如何向投资人展示我的商业模式？">
+                  <span class="prompt-icon">📊</span>
+                  <span class="prompt-text">融资展示建议</span>
+                </button>
+                <button class="prompt-card" data-mode="startup" data-prompt="早期团队招人，应该看重什么？如何避免招错人？">
+                  <span class="prompt-icon">👥</span>
+                  <span class="prompt-text">团队组建策略</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="prompts-section">
+              <h3>🎯 创建Agent</h3>
+              <div class="prompt-grid">
+                <button class="prompt-card" data-mode="agent" data-prompt="我想创建一个专门帮我分析用户反馈的AI助手">
+                  <span class="prompt-icon">📝</span>
+                  <span class="prompt-text">用户反馈分析助手</span>
+                </button>
+                <button class="prompt-card" data-mode="agent" data-prompt="帮我设计一个技术面试官AI">
+                  <span class="prompt-icon">💻</span>
+                  <span class="prompt-text">技术面试官</span>
+                </button>
+                <button class="prompt-card" data-mode="agent" data-prompt="我需要一个写作助手，专注于技术博客">
+                  <span class="prompt-icon">✍️</span>
+                  <span class="prompt-text">技术写作助手</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="welcome-footer">
+            <p class="tip">💡 <strong>提示:</strong> 选择一个示例开始，或在下方输入你的问题</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-log" id="chat-log" style="display: none;">
         <!-- Messages will be populated by script.js -->
       </div>
       

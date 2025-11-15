@@ -98,6 +98,7 @@
   const toggleSidebarBtn = document.getElementById('toggle-sidebar');
 
   // Chat area
+  const welcomeScreen = document.getElementById('welcome-screen');
   const chatLog = document.getElementById('chat-log');
   const chatForm = document.getElementById('chat-form');
   const userInput = document.getElementById('user-input');
@@ -121,6 +122,14 @@
   const API_STARTUP_MENTOR = '/api/startup-mentor';
   const API_CONV = '/api/conversations';
   const API_AUTH = '/api/auth';
+  const API_SEARCH = '/api/search';
+  const API_REACTIONS = '/api/reactions';
+
+  // Search input
+  const searchInput = document.getElementById('search-chats');
+
+  // Store message reactions locally
+  const messageReactions = new Map(); // messageId -> {thumbs_up, thumbs_down, bookmark}
 
   // Helper function to update page title and assistant name based on role
   function updateUIBasedOnRole(role) {
@@ -316,11 +325,9 @@
           setUI(false);
         }
       });
-      if (chatLog && !chatLog.children.length) {
-        // Reset to default title and assistant name
-        document.title = 'Dean';
-        addMessage('Dean', '你好，我是你的AI导师，陪你一同探索一切未知。');
-      }
+
+      // Show welcome screen on initial load
+      showWelcomeScreen();
     }
   }
   
@@ -353,9 +360,10 @@
     const safe = escapeHtml(text);
     return safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
   }
-  function createMessageElement(sender, message, extraClass = '') {
+  function createMessageElement(sender, message, extraClass = '', messageId = null) {
     const wrapper = document.createElement('div');
     wrapper.className = `chat-message ${extraClass}`.trim();
+    if (messageId) wrapper.dataset.messageId = messageId;
 
     const senderEl = document.createElement('p');
     senderEl.className = `message-sender ${sender}`;
@@ -367,10 +375,125 @@
 
     wrapper.appendChild(senderEl);
     wrapper.appendChild(contentEl);
+
+    // Add reaction buttons for assistant messages (if messageId is provided)
+    if (messageId && sender !== 'You') {
+      const reactionsBar = createReactionsBar(messageId);
+      wrapper.appendChild(reactionsBar);
+    }
+
     return wrapper;
   }
-  function addMessage(sender, message, extraClass = '') {
-    const el = createMessageElement(sender, message, extraClass);
+
+  function createReactionsBar(messageId) {
+    const bar = document.createElement('div');
+    bar.className = 'message-reactions';
+    bar.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;';
+
+    // Thumbs up button
+    const thumbsUpBtn = document.createElement('button');
+    thumbsUpBtn.className = 'reaction-btn thumbs-up';
+    thumbsUpBtn.innerHTML = '👍';
+    thumbsUpBtn.title = 'Helpful';
+    thumbsUpBtn.onclick = () => toggleReaction(messageId, 'thumbs_up', thumbsUpBtn);
+
+    // Thumbs down button
+    const thumbsDownBtn = document.createElement('button');
+    thumbsDownBtn.className = 'reaction-btn thumbs-down';
+    thumbsDownBtn.innerHTML = '👎';
+    thumbsDownBtn.title = 'Not helpful';
+    thumbsDownBtn.onclick = () => toggleReaction(messageId, 'thumbs_down', thumbsDownBtn);
+
+    // Bookmark button
+    const bookmarkBtn = document.createElement('button');
+    bookmarkBtn.className = 'reaction-btn bookmark';
+    bookmarkBtn.innerHTML = '⭐';
+    bookmarkBtn.title = 'Bookmark';
+    bookmarkBtn.onclick = () => toggleReaction(messageId, 'bookmark', bookmarkBtn);
+
+    bar.appendChild(thumbsUpBtn);
+    bar.appendChild(thumbsDownBtn);
+    bar.appendChild(bookmarkBtn);
+
+    // Load existing reactions
+    loadReactionsForMessage(messageId);
+
+    return bar;
+  }
+
+  async function toggleReaction(messageId, reactionType, button) {
+    const headers = { 'Content-Type': 'application/json', ...authManager.getAuthHeaders() };
+    const currentReactions = messageReactions.get(messageId) || {};
+    const isActive = currentReactions[reactionType];
+
+    try {
+      if (isActive) {
+        // Remove reaction
+        const res = await fetch(API_REACTIONS, {
+          method: 'DELETE',
+          headers,
+          body: JSON.stringify({ message_id: messageId, reaction_type: reactionType })
+        });
+
+        if (res.ok) {
+          delete currentReactions[reactionType];
+          button.classList.remove('active');
+        }
+      } else {
+        // Add reaction
+        const res = await fetch(API_REACTIONS, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ message_id: messageId, reaction_type: reactionType })
+        });
+
+        if (res.ok) {
+          currentReactions[reactionType] = true;
+          button.classList.add('active');
+        }
+      }
+
+      messageReactions.set(messageId, currentReactions);
+    } catch (error) {
+      console.error('Toggle reaction error:', error);
+    }
+  }
+
+  async function loadReactionsForMessage(messageId) {
+    const headers = { 'Content-Type': 'application/json', ...authManager.getAuthHeaders() };
+
+    try {
+      const res = await fetch(`${API_REACTIONS}?message_id=${messageId}`, {
+        method: 'GET',
+        headers
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const reactions = {};
+
+        (data.reactions || []).forEach(r => {
+          reactions[r.reaction_type] = true;
+        });
+
+        messageReactions.set(messageId, reactions);
+
+        // Update button states
+        const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageEl) {
+          Object.keys(reactions).forEach(type => {
+            const btn = messageEl.querySelector(`.reaction-btn.${type.replace('_', '-')}`);
+            if (btn) btn.classList.add('active');
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Load reactions error:', error);
+    }
+  }
+
+  function addMessage(sender, message, extraClass = '', messageId = null) {
+    const el = createMessageElement(sender, message, extraClass, messageId);
     chatLog.appendChild(el);
     chatLog.scrollTop = chatLog.scrollHeight;
     return el;
@@ -647,6 +770,9 @@
     if (conversationIdInput) conversationIdInput.value = currentConversationId;
     chatLog.innerHTML = '';
 
+    // Hide welcome screen and show chat log
+    hideWelcomeScreen();
+
     // Update title based on the latest assistant message's ai_mode
     const assistantMessages = (data.messages || []).filter(m => m.role === 'assistant');
     if (assistantMessages.length > 0) {
@@ -656,7 +782,7 @@
 
     (data.messages || []).forEach(m => {
       if (m.role === 'user') {
-        addMessage('You', m.content);
+        addMessage('You', m.content, '', m.id);
       } else {
         // Determine assistant name based on ai_mode
         let assistantName = 'Dean'; // default
@@ -669,7 +795,7 @@
         } else if (m.ai_mode === 'Agent_builder') {
           assistantName = 'Agent Builder';
         }
-        addMessage(assistantName, m.content);
+        addMessage(assistantName, m.content, '', m.id);
       }
     });
     renderConversations();
@@ -705,15 +831,27 @@
     }
   }
   
+  function showWelcomeScreen() {
+    if (welcomeScreen) welcomeScreen.style.display = 'flex';
+    if (chatLog) chatLog.style.display = 'none';
+  }
+
+  function hideWelcomeScreen() {
+    if (welcomeScreen) welcomeScreen.style.display = 'none';
+    if (chatLog) chatLog.style.display = 'block';
+  }
+
   function startNewConversation() {
     currentConversationId = '';
     if (conversationIdInput) conversationIdInput.value = '';
     chatLog.innerHTML = '';
-    
+
     // Reset to default title and assistant name
-    document.title = 'Dean';
-    addMessage('Dean', '这次想要探索哪些未知领域？');
+    document.title = 'Beta';
     document.querySelectorAll('.conversation-item.active').forEach(el => el.classList.remove('active'));
+
+    // Show welcome screen
+    showWelcomeScreen();
   }
 
   /* ================================
@@ -963,6 +1101,9 @@
     const text = (userInput?.value || '').trim();
     if (!text && !selectedFiles.length) return;
 
+    // Hide welcome screen and show chat log
+    hideWelcomeScreen();
+
     isSubmitting = true;
     
     console.log('🚀 CHAT SUBMISSION:');
@@ -1186,6 +1327,150 @@
   }
 
   /* ================================
+   *  Search Functionality
+   * ================================ */
+  let isSearchMode = false;
+  let searchResults = [];
+
+  async function performSearch(query, filters = {}) {
+    if (!query || query.trim().length === 0) {
+      isSearchMode = false;
+      await loadConversations(true);
+      return;
+    }
+
+    const headers = { 'Content-Type': 'application/json', ...authManager.getAuthHeaders() };
+    const params = new URLSearchParams({
+      query: query.trim(),
+      ...(filters.ai_mode && { ai_mode: filters.ai_mode }),
+      ...(filters.start_date && { start_date: filters.start_date }),
+      ...(filters.end_date && { end_date: filters.end_date })
+    });
+
+    try {
+      const res = await fetchWithRetry(`${API_SEARCH}?${params}`, {
+        method: 'GET',
+        headers
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error('Search error:', data.error);
+        showSearchMessage('搜索失败: ' + (data.error || '未知错误'), true);
+        return;
+      }
+
+      searchResults = data.results || [];
+      isSearchMode = true;
+      renderSearchResults(searchResults, query);
+
+      if (searchResults.length === 0) {
+        showSearchMessage('没有找到匹配的对话', false);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      showSearchMessage('搜索请求失败', true);
+    }
+  }
+
+  function highlightText(text, query) {
+    if (!query || !text) return text;
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+  }
+
+  function renderSearchResults(results, query) {
+    if (!conversationsList) return;
+    conversationsList.innerHTML = '';
+
+    if (results.length === 0) {
+      const noResults = document.createElement('div');
+      noResults.className = 'no-results';
+      noResults.style.cssText = 'padding: 1rem; text-align: center; color: #666;';
+      noResults.textContent = '没有找到匹配的对话';
+      conversationsList.appendChild(noResults);
+      return;
+    }
+
+    results.forEach(result => {
+      const el = document.createElement('div');
+      el.className = 'conversation-item search-result';
+      el.onclick = () => {
+        isSearchMode = false;
+        loadConversation(result.id);
+      };
+
+      // Title with highlight
+      const titleEl = document.createElement('div');
+      titleEl.className = 'conversation-title';
+      titleEl.innerHTML = highlightText(result.title || '未命名对话', query);
+
+      // Match count indicator
+      const matchCount = document.createElement('div');
+      matchCount.className = 'match-count';
+      matchCount.style.cssText = 'font-size: 0.75rem; color: #888; margin-top: 0.25rem;';
+      matchCount.textContent = `${result.matches.length} 条匹配`;
+
+      // Preview of first match
+      if (result.matches.length > 0) {
+        const preview = document.createElement('div');
+        preview.className = 'match-preview';
+        preview.style.cssText = 'font-size: 0.8rem; color: #666; margin-top: 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+        const firstMatch = result.matches[0];
+        const previewText = firstMatch.content.slice(0, 80) + (firstMatch.content.length > 80 ? '...' : '');
+        preview.innerHTML = highlightText(previewText, query);
+        el.appendChild(preview);
+      }
+
+      el.appendChild(titleEl);
+      el.appendChild(matchCount);
+      conversationsList.appendChild(el);
+    });
+
+    // Add "clear search" button at the top
+    const clearSearch = document.createElement('div');
+    clearSearch.className = 'clear-search';
+    clearSearch.style.cssText = 'padding: 0.75rem; background: #f0f0f0; cursor: pointer; text-align: center; margin-bottom: 0.5rem; border-radius: 4px;';
+    clearSearch.textContent = '✕ 清除搜索';
+    clearSearch.onclick = () => {
+      if (searchInput) searchInput.value = '';
+      isSearchMode = false;
+      loadConversations(true);
+    };
+    conversationsList.insertBefore(clearSearch, conversationsList.firstChild);
+  }
+
+  function showSearchMessage(msg, isError = false) {
+    // Could add a toast notification here
+    console.log(isError ? '❌' : '✓', msg);
+  }
+
+  // Search input handler with debounce
+  if (searchInput) {
+    const debouncedSearch = debounce((query) => {
+      performSearch(query);
+    }, 300);
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value;
+      if (query.length >= 2 || query.length === 0) {
+        debouncedSearch(query);
+      }
+    });
+
+    // Clear search on Escape
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        isSearchMode = false;
+        loadConversations(true);
+      }
+    });
+  }
+
+  /* ================================
    *  Auth UI handlers
    * ================================ */
   function showAuthMessage(msg, isError=false) {
@@ -1251,7 +1536,51 @@
   // Share conversation button
   const shareBtn = document.getElementById('share-conversation');
   if (shareBtn) shareBtn.addEventListener('click', shareConversation);
-  
+
+  /* ================================
+   *  Welcome Screen Prompt Cards
+   * ================================ */
+  const promptCards = document.querySelectorAll('.prompt-card');
+  promptCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const mode = card.dataset.mode;
+      const prompt = card.dataset.prompt;
+
+      // Set the mode
+      if (mode === 'learning') {
+        chatModeInput.value = 'learning';
+        currentModeText.textContent = '学习模式';
+      } else if (mode === 'startup') {
+        chatModeInput.value = 'startup';
+        currentModeText.textContent = '创业导师';
+      } else if (mode === 'agent') {
+        chatModeInput.value = 'agent';
+        currentModeText.textContent = '创建Agent';
+      }
+
+      // Update mode dropdown active state
+      document.querySelectorAll('.mode-option').forEach(opt => opt.classList.remove('active'));
+      const activeOption = document.querySelector(`.mode-option[data-mode="${mode}"]`);
+      if (activeOption) activeOption.classList.add('active');
+
+      // Set the user input and submit
+      if (userInput) {
+        userInput.value = prompt;
+        // Trigger auto-resize if it exists
+        const event = new Event('input', { bubbles: true });
+        userInput.dispatchEvent(event);
+      }
+
+      // Hide welcome screen and show chat log
+      hideWelcomeScreen();
+
+      // Submit the form
+      if (chatForm) {
+        chatForm.requestSubmit();
+      }
+    });
+  });
+
   // Sidebar hover tooltip for collapsed state
   function createHoverTooltip() {
     const tooltip = document.createElement('div');

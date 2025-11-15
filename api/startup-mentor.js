@@ -285,9 +285,26 @@ export default async function handler(req, res) {
     const messageRaw = fields.message;
     const message = Array.isArray(messageRaw) ? messageRaw[0] : (messageRaw || '');
     const uploaded = files.files ? (Array.isArray(files.files) ? files.files : [files.files]) : [];
-    
+
     const conversationIdRaw = fields.conversationId;
     const conversationId = Array.isArray(conversationIdRaw) ? conversationIdRaw[0] : (conversationIdRaw || '');
+
+    // SECURITY: Check for prompt leak attempts
+    if (message && message.trim()) {
+      const clientIP = getClientIP(req);
+      const guard = guardPromptLeak(message, 'Investor', user.id, clientIP);
+
+      if (!guard.allowed) {
+        // High-confidence leak attempt detected - return deflection response
+        console.warn('[SECURITY] Blocked prompt leak attempt from user:', user.id);
+        return sendJSON(res, 200, {
+          role: 'default',
+          reply: guard.response,
+          conversationId: conversationId || null,
+          _security: 'prompt_leak_blocked'
+        });
+      }
+    }
 
     // 提取文件内容
     const fileContents = [];
@@ -407,11 +424,17 @@ export default async function handler(req, res) {
       }
     }
 
+    // Protect system prompt from leaking
+    const protectedSystemPrompt = protectSystemPrompt(systemPrompt);
+
     // Prepare system prompt with file contents
-    let systemPromptWithFiles = systemPrompt;
+    let systemPromptWithFiles = protectedSystemPrompt;
     if (fileContents.length) {
       systemPromptWithFiles += '\n\n文件内容:\n' + fileContents.join('\n\n');
     }
+
+    // Sanitize user message before sending to AI
+    const sanitizedMessage = message ? sanitizeUserMessage(message) : '';
 
     console.log('CombinedPrompt length:', systemPromptWithFiles.length);
     console.log('Sending to gemini-2.5-pro');
@@ -444,11 +467,11 @@ export default async function handler(req, res) {
       });
     }
 
-    // Add current user message if there's a new one
-    if (message && !history.some(h => h.content === message)) {
+    // Add current user message if there's a new one (use sanitized version)
+    if (sanitizedMessage && !history.some(h => h.content === message)) {
       conversationContents.push({
         role: 'user',
-        parts: [{ text: message }]
+        parts: [{ text: sanitizedMessage }]
       });
     }
 
